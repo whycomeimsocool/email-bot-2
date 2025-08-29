@@ -1,5 +1,4 @@
 import discord
-from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 from email_parser import EmailParser
@@ -12,19 +11,7 @@ load_dotenv()
 email_parser = EmailParser()
 email_handler = EmailHandler()
 
-# Discord Button View for Email
-class EmailView(View):
-    def __init__(self, mailto_url):
-        super().__init__(timeout=300)  # Button expires after 5 minutes
-        self.mailto_url = mailto_url
-        
-        # Create the email button
-        email_button = Button(
-            label="Generate Email",
-            style=discord.ButtonStyle.primary,
-            url=self.mailto_url
-        )
-        self.add_item(email_button)
+# Note: Discord buttons don't support mailto: URLs, so we use clickable links in embeds instead
 
 # Discord bot setup
 intents = discord.Intents.default()
@@ -81,66 +68,47 @@ async def on_message(message):
         )
         print(f"Created mailto URL: {mailto_url[:100]}...")  # Debug log
         
+        # Create Discord embed with email preview and clickable link
+        embed = discord.Embed(
+            title="📧 Email Preview",
+            color=0x00ff00,  # Green color
+        )
+        
+        embed.add_field(name="To:", value=result['recipient'], inline=False)
+        
+        if result['subject']:
+            # Ensure subject isn't too long for embed field
+            subject_display = result['subject'] if len(result['subject']) <= 256 else result['subject'][:256] + "..."
+            embed.add_field(name="Subject:", value=subject_display, inline=False)
+        else:
+            embed.add_field(name="Subject:", value="(blank)", inline=False)
+        
+        if result['body']:
+            # Truncate body if too long for embed field (Discord limit is 1024 chars per field)
+            display_body = result['body'] if len(result['body']) <= 900 else result['body'][:900] + "..."
+            embed.add_field(name="Body:", value=f"```\n{display_body}\n```", inline=False)
+        else:
+            embed.add_field(name="Body:", value="(blank)", inline=False)
+        
+        # Add clickable link as an embed field
+        embed.add_field(name="🚀 Generate Email", value=f"[Click here to open your email client]({mailto_url})", inline=False)
+        embed.set_footer(text="Click the link above to open your default email application!")
+        
         try:
-            # Create button view first
-            view = EmailView(mailto_url)
-            
-            # Create Discord embed with email preview
-            embed = discord.Embed(
-                title="📧 Email Preview",
-                color=0x00ff00,  # Green color
-            )
-            
-            embed.add_field(name="To:", value=result['recipient'], inline=False)
-            
-            if result['subject']:
-                # Ensure subject isn't too long for embed field
-                subject_display = result['subject'] if len(result['subject']) <= 256 else result['subject'][:256] + "..."
-                embed.add_field(name="Subject:", value=subject_display, inline=False)
-            else:
-                embed.add_field(name="Subject:", value="(blank)", inline=False)
-            
-            if result['body']:
-                # Truncate body if too long for embed field (Discord limit is 1024 chars per field)
-                display_body = result['body'] if len(result['body']) <= 900 else result['body'][:900] + "..."
-                embed.add_field(name="Body:", value=f"```\n{display_body}\n```", inline=False)
-            else:
-                embed.add_field(name="Body:", value="(blank)", inline=False)
-            
-            embed.set_footer(text="Click the button below to open your email client!")
-            
-            await message.channel.send(embed=embed, view=view)
-            print("Sent embed with button successfully!")  # Debug log
-            
+            await message.channel.send(embed=embed)
+            print("Sent embed with clickable link successfully!")  # Debug log
         except Exception as embed_error:
             print(f"Embed error: {embed_error}")  # Debug log
             
-            # Send debug info to Discord for Railway debugging
-            await message.channel.send(f"🐛 Debug: Embed failed - {str(embed_error)}")
-            
-            # Fallback to simple text response with button view
+            # Fallback to simple text response with clickable link
             preview = email_handler.format_email_preview(
                 result['recipient'], 
                 result['subject'], 
                 result['body']
             )
             
-            try:
-                print("Attempting fallback with button...")  # Debug log
-                # Try to send with button view even without embed
-                view = EmailView(mailto_url)
-                await message.channel.send(f"{preview}\n\n📬 Use the button below to open your email client:", view=view)
-                print("Sent fallback text response with button")  # Debug log
-            except Exception as fallback_error:
-                print(f"Button fallback error: {fallback_error}")  # Debug log
-                
-                # Send button error to Discord for debugging
-                await message.channel.send(f"🐛 Debug: Button also failed - {str(fallback_error)}")
-                
-                # Ultimate fallback - just text with clearer formatting
-                print("Using ultimate fallback...")  # Debug log
-                await message.channel.send(f"{preview}\n\n📬 **Click this link to open your email client:**\n<{mailto_url}>")
-                print("Sent ultimate fallback text response")  # Debug log
+            await message.channel.send(f"{preview}\n\n🚀 **Generate Email**: [Click here to open your email client]({mailto_url})")
+            print("Sent fallback text response with clickable link")  # Debug log
         
         # Also try to open automatically (but don't rely on it)
         email_handler.open_email_client(
