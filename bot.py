@@ -114,8 +114,9 @@ async def on_message(message):
             
         except Exception as embed_error:
             print(f"Embed error: {embed_error}")  # Debug log
-            import traceback
-            traceback.print_exc()  # Print full error details
+            
+            # Send debug info to Discord for Railway debugging
+            await message.channel.send(f"🐛 Debug: Embed failed - {str(embed_error)}")
             
             # Fallback to simple text response with button view
             preview = email_handler.format_email_preview(
@@ -132,8 +133,9 @@ async def on_message(message):
                 print("Sent fallback text response with button")  # Debug log
             except Exception as fallback_error:
                 print(f"Button fallback error: {fallback_error}")  # Debug log
-                import traceback
-                traceback.print_exc()  # Print full error details
+                
+                # Send button error to Discord for debugging
+                await message.channel.send(f"🐛 Debug: Button also failed - {str(fallback_error)}")
                 
                 # Ultimate fallback - just text with clearer formatting
                 print("Using ultimate fallback...")  # Debug log
