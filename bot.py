@@ -50,26 +50,43 @@ async def on_message(message):
         )
         return
     
-    # Show email preview
-    preview = email_handler.format_email_preview(
-        result['recipient'], 
-        result['subject'], 
-        result['body']
-    )
-    
-    await message.channel.send(preview)
-    
-    # Create and provide mailto link
+    # Create mailto link
     mailto_url = email_handler.create_mailto_url(
         result['recipient'], 
         result['subject'], 
         result['body']
     )
     
-    await message.channel.send(
-        f"📬 Click this link to open your email client:\n{mailto_url}\n\n"
-        f"*If the link doesn't work, copy and paste it into your browser's address bar.*"
+    # Create Discord embed with email preview
+    embed = discord.Embed(
+        title="📧 Email Preview",
+        color=0x00ff00,  # Green color
+        url=mailto_url   # Makes the title clickable!
     )
+    
+    embed.add_field(name="To:", value=result['recipient'], inline=False)
+    
+    if result['subject']:
+        embed.add_field(name="Subject:", value=result['subject'], inline=False)
+    else:
+        embed.add_field(name="Subject:", value="(blank)", inline=False)
+    
+    if result['body']:
+        # Truncate body if too long for embed
+        display_body = result['body'] if len(result['body']) <= 1000 else result['body'][:1000] + "..."
+        embed.add_field(name="Body:", value=f"```\n{display_body}\n```", inline=False)
+    else:
+        embed.add_field(name="Body:", value="(blank)", inline=False)
+    
+    embed.add_field(
+        name="🔗 Open Email Client", 
+        value=f"[Click here to open your email client]({mailto_url})", 
+        inline=False
+    )
+    
+    embed.set_footer(text="Click the title or the link above to open your email client!")
+    
+    await message.channel.send(embed=embed)
     
     # Also try to open automatically (but don't rely on it)
     email_handler.open_email_client(
