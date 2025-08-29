@@ -92,7 +92,6 @@ async def on_message(message):
         
         # Add clickable link as an embed field
         embed.add_field(name="🚀 Generate Email", value=f"[Click here to open your email client]({mailto_url})", inline=False)
-        embed.set_footer(text="Click the link above to open your default email application!")
         
         try:
             await message.channel.send(embed=embed)
