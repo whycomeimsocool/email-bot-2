@@ -112,14 +112,23 @@ async def on_message(message):
             
         except Exception as embed_error:
             print(f"Embed error: {embed_error}")  # Debug log
-            # Fallback to simple text response
+            # Fallback to simple text response with button view
             preview = email_handler.format_email_preview(
                 result['recipient'], 
                 result['subject'], 
                 result['body']
             )
-            await message.channel.send(f"{preview}\n\n📬 Click this link to open your email client:\n{mailto_url}")
-            print("Sent fallback text response")  # Debug log
+            
+            try:
+                # Try to send with button view even without embed
+                view = EmailView(mailto_url)
+                await message.channel.send(f"{preview}\n\n📬 Use the button below to open your email client:", view=view)
+                print("Sent fallback text response with button")  # Debug log
+            except Exception as fallback_error:
+                print(f"Button fallback error: {fallback_error}")  # Debug log
+                # Ultimate fallback - just text with clearer formatting
+                await message.channel.send(f"{preview}\n\n📬 **Click this link to open your email client:**\n<{mailto_url}>")
+                print("Sent ultimate fallback text response")  # Debug log
         
         # Also try to open automatically (but don't rely on it)
         email_handler.open_email_client(
