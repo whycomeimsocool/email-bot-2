@@ -67,7 +67,7 @@ async def on_message(message):
     )
     
     await message.channel.send(
-        f"📬 **Click this link to open your email client:**\n{mailto_url}\n\n"
+        f"📬 Click this link to open your email client:\n{mailto_url}\n\n"
         f"*If the link doesn't work, copy and paste it into your browser's address bar.*"
     )
     
