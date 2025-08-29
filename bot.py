@@ -1,4 +1,5 @@
 import discord
+from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 from email_parser import EmailParser
@@ -10,6 +11,20 @@ load_dotenv()
 # Initialize components
 email_parser = EmailParser()
 email_handler = EmailHandler()
+
+# Discord Button View for Email
+class EmailView(View):
+    def __init__(self, mailto_url):
+        super().__init__(timeout=300)  # Button expires after 5 minutes
+        self.mailto_url = mailto_url
+        
+        # Create the email button
+        email_button = Button(
+            label="📧 Open Email Client",
+            style=discord.ButtonStyle.primary,
+            url=self.mailto_url
+        )
+        self.add_item(email_button)
 
 # Discord bot setup
 intents = discord.Intents.default()
@@ -71,7 +86,6 @@ async def on_message(message):
             embed = discord.Embed(
                 title="📧 Email Preview",
                 color=0x00ff00,  # Green color
-                url=mailto_url   # Makes the title clickable!
             )
             
             embed.add_field(name="To:", value=result['recipient'], inline=False)
@@ -88,16 +102,13 @@ async def on_message(message):
             else:
                 embed.add_field(name="Body:", value="(blank)", inline=False)
             
-            embed.add_field(
-                name="🔗 Open Email Client", 
-                value=f"[Click here to open your email client]({mailto_url})", 
-                inline=False
-            )
+            embed.set_footer(text="Click the button below to open your email client!")
             
-            embed.set_footer(text="Click the title or the link above to open your email client!")
+            # Create button view
+            view = EmailView(mailto_url)
             
-            await message.channel.send(embed=embed)
-            print("Sent embed successfully!")  # Debug log
+            await message.channel.send(embed=embed, view=view)
+            print("Sent embed with button successfully!")  # Debug log
             
         except Exception as embed_error:
             print(f"Embed error: {embed_error}")  # Debug log
