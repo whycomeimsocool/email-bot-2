@@ -91,12 +91,32 @@ class EmailParser:
             # Find the keyword in the message
             keyword_pos = message_lower.find(keyword)
             if keyword_pos != -1:
-                # Extract everything after the keyword until end of message
+                # Start extracting after the keyword
                 start_pos = keyword_pos + len(keyword)
-                subject_text = message[start_pos:].strip()
+                
+                # Find where to stop - look for body separator keywords
+                end_pos = len(message)  # Default to end of message
+                
+                # Check for body keywords that should terminate subject extraction
+                for body_keyword in self.body_keywords:
+                    body_pos = message_lower.find(body_keyword, start_pos)
+                    if body_pos != -1 and body_pos < end_pos:
+                        end_pos = body_pos
+                
+                # Also stop at comma followed by body keywords (common pattern)
+                comma_saying_match = re.search(r',\s*saying', message_lower[start_pos:])
+                if comma_saying_match:
+                    comma_pos = start_pos + comma_saying_match.start()
+                    if comma_pos < end_pos:
+                        end_pos = comma_pos
+                
+                subject_text = message[start_pos:end_pos].strip()
                 
                 # Remove leading non-alphanumeric characters
                 subject_text = re.sub(r'^[^\w"\']+', '', subject_text)
+                
+                # Remove trailing punctuation (especially commas)
+                subject_text = re.sub(r'[,\s]+$', '', subject_text)
                 
                 # Remove quotes if present
                 if subject_text.startswith('"') and subject_text.endswith('"'):
