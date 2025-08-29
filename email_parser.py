@@ -6,12 +6,17 @@ class EmailParser:
         # Email regex pattern
         self.email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         
-        # Subject patterns - looking for quoted text after "subject"
+        # Subject patterns - looking for quoted and unquoted text after "subject"
         self.subject_patterns = [
+            # Quoted subjects (higher priority)
             r'subject\s+["\']([^"\']+)["\']',
             r'with\s+the\s+subject\s+["\']([^"\']+)["\']',
             r'subject\s+line\s+["\']([^"\']+)["\']',
-            r'title\s+["\']([^"\']+)["\']'
+            r'title\s+["\']([^"\']+)["\']',
+            # Unquoted subjects (capture until comma, "saying", or end)
+            r'with\s+the\s+subject\s+([^,]+?)(?:\s*,|\s+saying|\s*$)',
+            r'subject\s+([^,]+?)(?:\s*,|\s+saying|\s*$)',
+            r'subject\s+line\s+([^,]+?)(?:\s*,|\s+saying|\s*$)'
         ]
         
         # Recipient patterns

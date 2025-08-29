@@ -59,29 +59,24 @@ async def on_message(message):
     
     await message.channel.send(preview)
     
-    # Try to open the email client
-    success = email_handler.open_email_client(
+    # Create and provide mailto link
+    mailto_url = email_handler.create_mailto_url(
         result['recipient'], 
         result['subject'], 
         result['body']
     )
     
-    if success:
-        await message.channel.send(
-            "✅ I've opened your default email client with the email ready to send!\n"
-            "Just review the content and hit send when you're ready."
-        )
-    else:
-        # Provide fallback mailto link
-        mailto_url = email_handler.create_mailto_url(
-            result['recipient'], 
-            result['subject'], 
-            result['body']
-        )
-        await message.channel.send(
-            f"❌ I couldn't automatically open your email client. Here's a mailto link you can click:\n"
-            f"{mailto_url}"
-        )
+    await message.channel.send(
+        f"📬 **Click this link to open your email client:**\n{mailto_url}\n\n"
+        f"*If the link doesn't work, copy and paste it into your browser's address bar.*"
+    )
+    
+    # Also try to open automatically (but don't rely on it)
+    email_handler.open_email_client(
+        result['recipient'], 
+        result['subject'], 
+        result['body']
+    )
 
 @client.event
 async def on_message_edit(before, after):
